@@ -5,5 +5,6 @@ RUN apk add --update \
 	drill \
 	iperf3 \
 	iproute2 \
+	net-tools \
 	socat \
 	tcpdump
