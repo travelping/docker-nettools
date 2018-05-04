@@ -1,6 +1,7 @@
 FROM	alpine:3.7
 RUN apk add --update \
 	bash \
+	coreutils \
 	curl \
 	drill \
 	iperf3 \
