@@ -7,6 +7,7 @@ RUN apk add --update \
 	iperf3 \
 	iproute2 \
 	iptables \
+	keepalived \
 	net-tools \
 	socat \
 	tcpdump
