@@ -7,6 +7,7 @@ RUN apk add --update \
 	iperf3 \
 	iproute2 \
 	iptables \
+	ip6tables \
 	keepalived \
 	net-tools \
 	socat \
