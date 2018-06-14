@@ -1,6 +1,7 @@
 FROM	alpine:3.7
 RUN apk add --update \
 	bash \
+	conntrack-tools \
 	coreutils \
 	curl \
 	drill \
@@ -10,5 +11,6 @@ RUN apk add --update \
 	ip6tables \
 	keepalived \
 	net-tools \
+	nftables \
 	socat \
 	tcpdump
