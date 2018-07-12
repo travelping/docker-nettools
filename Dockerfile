@@ -13,4 +13,5 @@ RUN apk add --update \
 	net-tools \
 	nftables \
 	socat \
+	ethtool \
 	tcpdump
