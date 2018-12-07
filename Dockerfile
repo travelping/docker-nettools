@@ -8,6 +8,7 @@ RUN apk add --update \
 	iperf3 \
 	iproute2 \
 	iptables \
+	iputils \
 	ip6tables \
 	keepalived \
 	net-tools \
