@@ -1,6 +1,6 @@
 # Nettools
 
-A simple, small, alpine-based docker image with some handy networking tools
+A simple, small, alpine-based Docker image with some handy networking tools
 installed:
 
 - curl
