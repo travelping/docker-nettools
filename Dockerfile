@@ -22,4 +22,5 @@ RUN		apk add --no-cache --update \
 		socat \
 		ethtool \
 		mtr \
-		tcpdump
+		tcpdump \
+		busybox-extras
