@@ -11,6 +11,7 @@ RUN		apk add --no-cache --update \
 		coreutils \
 		curl \
 		drill \
+		iperf2 \
 		iperf3 \
 		iproute2 \
 		iptables \

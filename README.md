@@ -6,7 +6,7 @@ installed:
 - curl
 - iproute2
 - tcpdump
-- iperf3
+- iperf3/iperf2
 - drill
 - socat
 - telnet
