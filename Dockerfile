@@ -1,9 +1,9 @@
-FROM	alpine:3.11
+FROM	alpine:3.12.3
 
 LABEL	org.label-schema.description="Useful network related tools"
 LABEL	org.label-schema.vendor=travelping.com
 LABEL	org.label-schema.copyright=travelping.com
-LABEL	org.label-schema.version=1.10.1
+LABEL	org.label-schema.version=1.10.2
 
 RUN		apk add --no-cache --update \
 		bash \

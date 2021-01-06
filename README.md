@@ -9,6 +9,5 @@ installed:
 - iperf3
 - drill
 - socat
-- telnet
 
 Please see the Dockerfile for a complete list of tools.
