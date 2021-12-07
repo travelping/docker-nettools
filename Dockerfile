@@ -12,7 +12,6 @@ RUN apk add --no-cache --update \
         bison
 
 RUN git clone git://github.com/netsniff-ng/netsniff-ng.git
-RUN cd netsniff-ng
 
 WORKDIR /workspace/netsniff-ng
 RUN git checkout v0.6.7
@@ -24,7 +23,7 @@ FROM alpine:3.15
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
 LABEL org.label-schema.copyright=travelping.com
-LABEL org.label-schema.version=1.10.1
+LABEL org.label-schema.version=1.11.0
 
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
