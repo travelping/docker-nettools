@@ -47,4 +47,5 @@ RUN apk add --no-cache --update \
         ethtool \
         mtr \
         tcpdump \
-        busybox-extras
+        busybox-extras \
+        lz4 zstd
