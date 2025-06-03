@@ -1,4 +1,4 @@
-FROM alpine:3.20 as builder
+FROM alpine:3.22 AS builder
 
 WORKDIR /workspace
 
@@ -14,13 +14,11 @@ RUN apk add --no-cache --update \
 RUN git clone https://github.com/netsniff-ng/netsniff-ng.git
 
 WORKDIR /workspace/netsniff-ng
-RUN git checkout v0.6.8
-
+RUN git checkout v0.6.9
 RUN mkdir /etc/netsniff-ng && cp trafgen_stddef.h /etc/netsniff-ng
-
 RUN ./configure && make && mkdir /usr/local/sbin && make install
 
-FROM alpine:3.20
+FROM alpine:3.22
 
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
