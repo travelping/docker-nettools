@@ -4,17 +4,19 @@ A simple, small, alpine-based Docker image with some handy networking tools
 installed:
 
 - bpfc
-- bird2
+- bird3
 - curl
 - drill
+- ethtool
 - iperf3
 - iproute2
-- lz4
+- iptables
+- mtr
 - netsniff-ng
+- nftables
 - socat
 - tcpdump
 - telnet
 - trafgen
-- zstd
 
 Please see the Dockerfile for a complete list of tools.
