@@ -23,7 +23,7 @@ FROM alpine:3.22
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
 LABEL org.label-schema.copyright=travelping.com
-LABEL org.label-schema.version=1.13.0
+LABEL org.label-schema.version=1.14.0
 
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
