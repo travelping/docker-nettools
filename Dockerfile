@@ -44,6 +44,7 @@ RUN apk add --no-cache --update \
         keepalived \
         net-tools \
         nftables \
+        openssl \
         socat \
         ethtool \
         mtr \
