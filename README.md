@@ -14,6 +14,7 @@ installed:
 - mtr
 - netsniff-ng
 - nftables
+- openssl
 - socat
 - tcpdump
 - telnet
