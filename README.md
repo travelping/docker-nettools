@@ -4,7 +4,6 @@ A simple, small, alpine-based Docker image with some handy networking tools
 installed:
 
 - bpfc
-- bird3
 - curl
 - drill
 - ethtool
@@ -19,5 +18,6 @@ installed:
 - tcpdump
 - telnet
 - trafgen
+- tshark / dumpcap / mergecap
 
 Please see the Dockerfile for a complete list of tools.
