@@ -23,7 +23,7 @@ FROM alpine:3.23.4
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
 LABEL org.label-schema.copyright=travelping.com
-LABEL org.label-schema.version=1.16.0
+LABEL org.label-schema.version=1.17.0
 
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
@@ -31,7 +31,6 @@ COPY --from=builder /usr/local/sbin/trafgen /usr/local/sbin/trafgen
 
 RUN apk add --no-cache --update \
         bash \
-        bird \
         conntrack-tools \
         coreutils \
         curl \
@@ -49,5 +48,6 @@ RUN apk add --no-cache --update \
         ethtool \
         mtr \
         tcpdump \
+        tshark \
         busybox-extras \
         lz4 zstd
