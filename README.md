@@ -19,5 +19,6 @@ installed:
 - telnet
 - trafgen
 - tshark / dumpcap / mergecap
+* udevd
 
 Please see the Dockerfile for a complete list of tools.
