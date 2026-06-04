@@ -30,24 +30,26 @@ COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
 COPY --from=builder /usr/local/sbin/trafgen /usr/local/sbin/trafgen
 
 RUN apk add --no-cache --update \
-        bash \
-        conntrack-tools \
-        coreutils \
-        curl \
-        drill \
-        iperf3 \
-        iproute2 \
-        iptables \
-        iputils \
-        ip6tables \
-        keepalived \
-        net-tools \
-        nftables \
-        openssl \
-        socat \
-        ethtool \
-        mtr \
-        tcpdump \
-        tshark \
-        busybox-extras \
-        lz4 zstd
+        bash                    \
+        busybox-extras          \
+        conntrack-tools         \
+        coreutils               \
+        curl                    \
+        drill                   \
+        ethtool                 \
+        ip6tables               \
+        iperf3                  \
+        iproute2                \
+        iptables                \
+        iputils                 \
+        keepalived              \
+        lz4                     \
+        mtr                     \
+        net-tools               \
+        nftables                \
+        openssl                 \
+        socat                   \
+        tcpdump                 \
+        tshark                  \
+        udev                    \
+        zstd
