@@ -1,4 +1,4 @@
-FROM alpine:3.23.4 AS builder
+FROM alpine:3.24.1 AS builder
 
 WORKDIR /workspace
 
@@ -18,12 +18,12 @@ RUN git checkout v0.6.9
 RUN mkdir /etc/netsniff-ng && cp trafgen_stddef.h /etc/netsniff-ng
 RUN ./configure && make && mkdir /usr/local/sbin && make install
 
-FROM alpine:3.23.4
+FROM alpine:3.24.1
 
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
 LABEL org.label-schema.copyright=travelping.com
-LABEL org.label-schema.version=1.17.0
+LABEL org.label-schema.version=1.18.1
 
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
