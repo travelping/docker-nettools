@@ -7,6 +7,7 @@ installed:
 - curl
 - drill
 - ethtool
+- gtping
 - iperf3
 - iproute2
 - iptables

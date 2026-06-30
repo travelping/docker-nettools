@@ -11,14 +11,18 @@ RUN apk add --no-cache --update \
         flex \
         bison
 
-RUN git clone https://github.com/netsniff-ng/netsniff-ng.git
+RUN git clone --branch v0.6.9 --depth 1 https://github.com/netsniff-ng/netsniff-ng.git
 
 WORKDIR /workspace/netsniff-ng
-RUN git checkout v0.6.9
 RUN mkdir /etc/netsniff-ng && cp trafgen_stddef.h /etc/netsniff-ng
 RUN ./configure && make && mkdir /usr/local/sbin && make install
 
-FROM alpine:3.24.1
+WORKDIR /workspace
+RUN git clone --branch gtping-0.15 --depth 1 https://github.com/ThomasHabets/gtping.git
+WORKDIR /workspace/gtping
+RUN ./configure && make && make install
+
+FROM alpine:3.24.1 AS runtime
 
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
@@ -28,6 +32,7 @@ LABEL org.label-schema.version=1.18.1
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
 COPY --from=builder /usr/local/sbin/trafgen /usr/local/sbin/trafgen
+COPY --from=builder /usr/local/bin/gtping /usr/local/bin/gtping
 
 RUN apk add --no-cache --update \
         bash                    \
