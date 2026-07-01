@@ -27,7 +27,7 @@ FROM alpine:3.24.1 AS runtime
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
 LABEL org.label-schema.copyright=travelping.com
-LABEL org.label-schema.version=1.18.1
+LABEL org.label-schema.version=1.19.0
 
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
