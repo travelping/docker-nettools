@@ -1,0 +1,34 @@
+# The alpine packages the runtime image deliberately installs, one per line.
+# Everything after a '#' is a comment; blank lines are ignored.
+#
+# This file is the input to the lock, not the lock itself: `mise run
+# image:apk-lock` resolves it against alpine:$ALPINE_VERSION and writes every
+# package it pulls in -- transitive dependencies and the base set included --
+# to apks.lock, which is what the image build installs.
+#
+# The descriptions are rendered into README.md by `mise run docs:packages`.
+# Keep them to one line, and where the package name does not say which
+# binaries it brings, name them first: `binary/binary: what they are for`.
+
+bash              # full shell, not the busybox ash applet
+busybox-extras    # telnet/ftpget/httpd: applets the base busybox omits
+conntrack-tools   # conntrack/nfct: read and flush the kernel conntrack table
+coreutils         # GNU od, stat, timeout and friends, not the busybox applets
+curl              # HTTP(S) client
+drill             # DNS lookups, including DNSSEC chases
+ethtool           # NIC link state, driver info, offload and ring settings
+eudev             # udevd/udevadm: interface naming and device rules
+iperf3            # TCP/UDP throughput measurement
+iproute2          # ip/ss/tc: addresses, routes, sockets, qdiscs
+iptables          # iptables/ip6tables/ebtables/arptables, nft-backed
+iputils           # ping/arping/tracepath: reachability and path checks
+keepalived        # VRRP for failover experiments
+lz4               # compression and decompression of captures and blobs
+mtr               # traceroute and ping in one continuous view
+net-tools         # ifconfig/netstat/route: for runbooks that still use them
+nftables          # nft: the current packet filter
+openssl           # TLS client, certificate and cipher inspection
+socat             # relays between arbitrary sockets, pipes and ttys
+tcpdump           # packet capture
+tshark            # tshark/dumpcap/mergecap: the Wireshark CLI tools
+zstd              # compression and decompression of captures and blobs
