@@ -1,0 +1,299 @@
+# No [tools] section on purpose: every tool is declared by the task that needs
+# it, so `mise install` in CI -- which builds the image and nothing else --
+# installs nothing, and the repo-maintenance tools are fetched only when
+# someone actually runs a maintenance task.
+
+[env]
+# apks.lock is resolved against this value and the Dockerfile's ARG default has
+# to match it; `mise run image:build` refuses to build if they drift.
+ALPINE_VERSION = "3.24.1"
+
+[tasks."image:build"]
+alias = "container-image"
+description = "Build the container image"
+usage = '''
+arg "<image>" default="localhost/nettools:latest"
+arg "<cri>" default="podman"
+arg "<platforms>" default="host"
+'''
+run = '''
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+
+cd "$MISE_PROJECT_ROOT"
+
+platforms="$usage_platforms"
+if [ "$platforms" = "host" ]; then
+    case "$(uname -m)" in
+        x86_64)          platforms="linux/amd64" ;;
+        aarch64|arm64)   platforms="linux/arm64" ;;
+        *) echo "unmapped host arch $(uname -m); pass platforms explicitly" >&2; exit 1 ;;
+    esac
+fi
+
+# ALPINE_VERSION is deliberately not passed as a build arg: the Dockerfile
+# default is the single source of truth for the image, and apks.lock was
+# resolved against it. Guard against the two drifting apart, which would
+# install lock-pinned packages onto a base they were never resolved for.
+dockerfile_alpine=$(sed -nE 's/^ARG ALPINE_VERSION=(.*)$/\1/p' Dockerfile | head -1)
+if [ "$dockerfile_alpine" != "$ALPINE_VERSION" ]; then
+    echo "ALPINE_VERSION mismatch: .mise/config.toml says '$ALPINE_VERSION'," >&2
+    echo "Dockerfile says '$dockerfile_alpine'. apks.lock was resolved against" >&2
+    echo "the former; align them and re-run 'mise run image:apk-lock'." >&2
+    exit 1
+fi
+
+# The lock has to cover the packages we actually ask for; a package added to
+# apks.list without a regeneration would otherwise be silently missing from
+# the image.
+for pkg in $(sed -e 's/#.*//' -e '/^[[:space:]]*$/d' apks.list); do
+    grep -q "^$pkg=" apks.lock || {
+        echo "apks.lock does not carry '$pkg' from apks.list;" >&2
+        echo "run 'mise run image:apk-lock'" >&2
+        exit 1
+    }
+done
+
+exec "$usage_cri" buildx build \
+    --platform "$platforms" \
+    -f Dockerfile \
+    -t "$usage_image" .
+'''
+
+[tasks."image:apk-lock"]
+alias = "apk-lock"
+description = "Regenerate apks.lock from a clean alpine image, with upgrades applied"
+# jq: apk-installed.sh turns `apk info --format=json` into the lock lines.
+tools = { jq = "1.8.2" }
+usage = '''
+arg "<cri>" default="podman"
+'''
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$MISE_PROJECT_ROOT"
+# apks.list -- the commented, human-editable list -- is the input; the script
+# strips the comments itself.
+./tools/gen-apk-lock.sh "$ALPINE_VERSION" "$usage_cri" apks.lock <apks.list
+"""
+
+[tasks."image:packages"]
+alias = "list-packages"
+description = "List the packages installed in a built image, in apks.lock format"
+# jq: same reason as image:apk-lock -- both go through apk-installed.sh.
+tools = { jq = "1.8.2" }
+usage = '''
+arg "<image>" default="localhost/nettools:latest" help="local image to inspect, as name[:tag]"
+arg "<cri>" default="podman"
+flag "--platform <platform>" help="arch of a multi-arch image, e.g. linux/amd64; a foreign one needs emulation"
+'''
+run = '''
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+cd "$MISE_PROJECT_ROOT"
+
+# What the image actually ships, as opposed to what apks.lock says it should:
+#   mise run image:packages | diff <(grep -v '^#' apks.lock) -
+#
+# Deliberately not a resolution. The same script generates the lock, but there
+# it runs against a clean alpine with an upgrade first; here it reads back the
+# image's frozen installed db -- no setup command, no branch lookup. Sharing it
+# is what keeps the two outputs diffable.
+#
+# Two branches rather than an array of optional arguments: macOS still ships
+# bash 3.2, where expanding an empty array is an error.
+if [[ -n "${usage_platform:-}" ]]; then
+    ./tools/apk-installed.sh --platform "$usage_platform" "$usage_cri" "$usage_image"
+else
+    ./tools/apk-installed.sh "$usage_cri" "$usage_image"
+fi
+'''
+
+[tasks."docs:packages"]
+alias = "update-packages"
+description = "Refresh the package list in README.md from apks.list"
+run = '''
+#!/usr/bin/env bash
+set -euo pipefail
+cd "$MISE_PROJECT_ROOT"
+
+# apks.list is the single source of truth for what the image installs; this
+# renders its `pkg  # what it is for` lines as the README bullet list, between
+# the <!-- packages -->/<!-- packagesstop --> markers. Tools built from source
+# in the Dockerfile are listed by hand outside that block.
+list=$(sed -E -e 's/^[[:space:]]+//' -e '/^#/d' -e '/^[[:space:]]*$/d' \
+              -e 's/^([^[:space:]#]+)[[:space:]]*#[[:space:]]*(.*)$/- `\1` -- \2/' \
+              -e '/^- /! s/^([^[:space:]]+)[[:space:]]*$/- `\1`/' apks.list)
+
+awk -v list="$list" '
+    /<!-- packages -->/    { print; print ""; print list; print ""; skip=1; next }
+    /<!-- packagesstop -->/ { skip=0 }
+    !skip
+' README.md >README.md.tmp && mv README.md.tmp README.md
+
+echo "package list updated: README.md"
+'''
+
+[tasks."image:report-trivy"]
+alias = "report-trivy"
+description = "List trivy findings for a built image, most severe first"
+tools = { trivy = "0.74.0", jq = "1.8.2" }
+usage = '''
+arg "<image>" default="localhost/nettools:latest" help="local image to scan, as name[:tag]"
+'''
+run = """
+tmp=$(mktemp -t nettools.XXXXXX)
+trap 'rm -f "$tmp"' EXIT
+podman save "$usage_image" -o "$tmp"
+trivy image --format json --input "$tmp" | jq -r '
+  {"CRITICAL":1,"HIGH":2,"MEDIUM":3,"LOW":4,"UNKNOWN":5} as $rank
+  | .Results[].Vulnerabilities[]?
+  | [ $rank[.Severity],
+      (.PkgName + "@" + .InstalledVersion),
+      .VulnerabilityID,
+      .Severity ]
+  | @tsv' | \
+  sort -t"$(printf '\\t')" -u -k2,2 -k1,1n -k3,3 | \
+  cut -f2- | \
+  column -t
+"""
+
+[tasks."image:report-grype"]
+alias = "report-grype"
+description = "List grype findings for a built image, most severe first"
+tools = { grype = "0.119.0", jq = "1.8.2" }
+usage = '''
+arg "<image>" default="localhost/nettools:latest" help="local image to scan, as name[:tag]"
+'''
+run = """
+tmp=$(mktemp -t nettools.XXXXXX)
+trap 'rm -f "$tmp"' EXIT
+podman save "$usage_image" -o "$tmp"
+grype "docker-archive:$tmp" -o json | jq -r '
+  {"Critical":1,"High":2,"Medium":3,"Low":4,"Negligible":5,"Unknown":6} as $rank
+  | .matches[]
+  | [ $rank[.vulnerability.severity],
+      (.artifact.name + "@" + .artifact.version),
+      .vulnerability.id,
+      (.vulnerability.severity | ascii_upcase) ]
+  | @tsv' | \
+  sort -t"$(printf '\\t')" -u -k2,2 -k1,1n -k3,3 | \
+  cut -f2- | \
+  column -t
+"""
+
+[tasks."ci:pin-actions"]
+alias = "pin-actions"
+description = "Pin all GitHub Action references to full-length commit SHAs"
+tools = { pinact = "5.0.0" }
+run = """
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+pinact run
+"""
+
+[tasks."ci:update-actions"]
+alias = "update-actions"
+description = "Update pinned GitHub Actions to the latest release older than 14 days"
+tools = { pinact = "5.0.0" }
+run = """
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+# The cooldown keeps same-day releases -- the ones most likely to be yanked or
+# hotfixed -- out of the pipeline. Skipped ones are logged as
+# 'skip release due to cooldown'.
+pinact run --update --min-age 14
+"""
+
+[tasks."ci:diff-actions"]
+alias = "diff-actions"
+description = "Show what changed upstream in the GitHub Actions repinned by ci:update-actions"
+# jq: formats the GitHub compare API response.
+tools = { jq = "1.8.2" }
+# Literal TOML string: a """ block would eat the backslashes in the sed
+# expression below as TOML escapes before the shell sees them.
+run = '''
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+
+# Compares the old and new commit SHAs of every action pin changed in
+# .github/workflows and prints the upstream commits and touched files.
+# Defaults to the uncommitted working tree; pass a git revision range to
+# inspect already committed changes, e.g. `mise run ci:diff-actions HEAD~1`.
+
+curl_args=(--silent --show-error --fail --header "Accept: application/vnd.github+json")
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+    curl_args+=(--header "Authorization: Bearer ${GITHUB_TOKEN}")
+fi
+
+declare -A old_sha new_sha old_tag new_tag
+
+changes=$(git diff "${@}" -- .github/workflows)
+pins=$(grep -E '^[-+][[:space:]]*(- )?uses: ' <<< "${changes}" |
+    tr -d '"' |
+    sed -E -n 's|^(.).*uses: ([^@]+)@([0-9a-f]{40})[[:space:]]*#?[[:space:]]*(.*)$|\1 \2 \3 \4|'p |
+    sort -u || true)
+
+if [[ -z "${pins}" ]]; then
+    echo "no action pins changed"
+    exit 0
+fi
+
+while read -r sign action sha tag; do
+    if [[ "${sign}" == "-" ]]; then
+        old_sha["${action}"]="${sha}"
+        old_tag["${action}"]="${tag}"
+    else
+        new_sha["${action}"]="${sha}"
+        new_tag["${action}"]="${tag}"
+    fi
+done <<< "${pins}"
+
+for action in "${!new_sha[@]}"; do
+    old="${old_sha[${action}]:-}"
+    new="${new_sha[${action}]}"
+
+    echo "=== ${action}: ${old_tag[${action}]:-?} -> ${new_tag[${action}]}"
+    if [[ -z "${old}" ]]; then
+        echo "  newly added, nothing to compare"
+        echo
+        continue
+    fi
+    if [[ "${old}" == "${new}" ]]; then
+        continue
+    fi
+
+    # actions can live in a subdirectory, the compare API needs owner/repo only
+    path="${action#*/}"
+    repo="${action%%/*}/${path%%/*}"
+    echo "  https://github.com/${repo}/compare/${old}...${new}"
+    echo
+
+    curl "${curl_args[@]}" "https://api.github.com/repos/${repo}/compare/${old}...${new}" |
+        jq -r '
+            "  status=\(.status) ahead=\(.ahead_by) behind=\(.behind_by)",
+            "",
+            "  commits:",
+            (.commits[] | "    \(.sha[0:8]) \(.commit.message | split("\n")[0])"),
+            "",
+            "  files:",
+            (.files[]? | "    \(.status) \(.filename) +\(.additions)/-\(.deletions)")
+        '
+    echo
+done
+'''
+
+[tasks."tools:lock"]
+alias = "lock-tools"
+description = "Update .mise/mise.lock for the various needed platforms"
+run = """
+#!/usr/bin/env bash
+set -o errexit
+set -o pipefail
+mise lock --platform linux-arm64,linux-x64
+"""
