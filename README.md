@@ -90,6 +90,13 @@ multi-arch image, which needs emulation to run on another arch.
 **Alpine base**: bump `ALPINE_VERSION` in `.mise/config.toml` and the
 `Dockerfile` `ARG` together, then regenerate the lock.
 
+**Distrusted root CAs**: the image build filters
+`/etc/ssl/certs/ca-certificates.crt` against
+[`tools/ca-distrust.sha256`](tools/ca-distrust.sha256), one SHA-256 fingerprint
+of the DER certificate per line. When `ca-certificates-bundle` moves in the
+lock, check whether upstream now drops a listed root itself; the entry stays
+listed regardless, so a reverted bundle is filtered the same way.
+
 **Source-built tools**: bump the `--branch` tags in the `Dockerfile`. That
 stage is not locked -- nothing from it reaches the runtime image except those
 binaries.

@@ -44,6 +44,12 @@ COPY apks.lock /tmp/apks.lock
 # the image build. The grep drops the generated header comments.
 RUN grep -v '^#' /tmp/apks.lock | xargs apk add --no-cache && rm /tmp/apks.lock
 
+# Drop the root CAs listed in tools/ca-distrust.sha256 (eMudhra/emSign) from
+# the system bundle that curl, openssl, tshark and ssl_client read.
+COPY tools/ca-distrust.sh tools/ca-distrust.sha256 /tmp/
+RUN sh /tmp/ca-distrust.sh /etc/ssl/certs/ca-certificates.crt /tmp/ca-distrust.sha256 \
+ && rm /tmp/ca-distrust.sh /tmp/ca-distrust.sha256
+
 COPY --from=builder /usr/local/sbin/bpfc /usr/local/sbin/bpfc
 COPY --from=builder /usr/local/sbin/netsniff-ng /usr/local/sbin/netsniff-ng
 COPY --from=builder /usr/local/sbin/trafgen /usr/local/sbin/trafgen
