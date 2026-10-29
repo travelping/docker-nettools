@@ -34,7 +34,7 @@ FROM alpine:${ALPINE_VERSION} AS runtime
 LABEL org.label-schema.description="Useful network related tools"
 LABEL org.label-schema.vendor=travelping.com
 LABEL org.label-schema.copyright=travelping.com
-LABEL org.label-schema.version=1.19.0
+LABEL org.label-schema.version=1.19.1
 
 COPY apks.lock /tmp/apks.lock
 
