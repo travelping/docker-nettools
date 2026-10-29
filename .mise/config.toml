@@ -6,7 +6,7 @@
 [env]
 # apks.lock is resolved against this value and the Dockerfile's ARG default has
 # to match it; `mise run image:build` refuses to build if they drift.
-ALPINE_VERSION = "3.24.1"
+ALPINE_VERSION = "3.24.3"
 
 [tasks."image:build"]
 alias = "container-image"
@@ -28,7 +28,7 @@ if [ "$platforms" = "host" ]; then
     case "$(uname -m)" in
         x86_64)          platforms="linux/amd64" ;;
         aarch64|arm64)   platforms="linux/arm64" ;;
-        *) echo "unmapped host arch $(uname -m); pass platforms explicitly" >&2; exit 1 ;;
+        *) echo "unsupported host arch $(uname -m); pass platforms explicitly" >&2; exit 1 ;;
     esac
 fi
 
